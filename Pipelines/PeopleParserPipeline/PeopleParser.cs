@@ -1,4 +1,5 @@
-﻿using Pipeline.Interfaces;
+﻿using Pipeline.Extensions;
+using Pipeline.Interfaces;
 using Pipeline.Pipelines.Steps;
 
 namespace Pipeline.Pipelines;
@@ -15,7 +16,7 @@ public class PeopleParser: IPipelineRunner
 
         // Initialize the pipeline builder with input type string
         var pipelineBuilder = PipelineBase<string, string>.Create(repository)
-            .AddStep(new ParseStep()) // string -> Person
+            .AddStep(new ParseStep().WithOutput("parse-step.js")) // string -> Person
             .AddStep(new ValidateStep()) // Person -> Person
             .AddStep(new SerializeStep()); // Person -> string
 

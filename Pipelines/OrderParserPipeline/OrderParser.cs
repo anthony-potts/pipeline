@@ -14,7 +14,7 @@ namespace Pipeline.Pipelines.OrderParserPipeline;
             IPipelineContextRepository repository = new JsonFilePipelineContextRepository(storagePath);
 
             // Initialize the pipeline builder with input type string
-            var pipelineBuilder = Pipeline<string, string>.Create(repository)
+            var pipelineBuilder = PipelineBase<string, string>.Create(repository)
                 .AddStep(new ParseOrderStep())      // string -> Order
                 .AddStep(new ValidateOrderStep())   // Order -> Order
                 .AddStep(new SerializeOrderStep()); // Order -> string
@@ -40,8 +40,8 @@ namespace Pipeline.Pipelines.OrderParserPipeline;
             var successfulOutputs = new List<string>();
 
             // Initialize BatchPipeline with the correct Pipeline class
-            var batchPipeline = new BatchPipeline<string, string>(new Pipeline<string, string>(pipelineFunc));
-
+            var batchPipeline = new BatchPipeline<string, string>(pipelineFunc);
+            
             // Create PipelineContext for each input
             foreach (var input in inputData)
             {
