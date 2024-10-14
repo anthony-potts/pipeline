@@ -50,4 +50,10 @@ public class ValidateStep : IPipelineStep<Person, Person>
             StepAudits = context.StepAudits
         };
     }
+
+    public bool Validate(PipelineContext<Person> input)
+    {
+        // Ensure the input has a valid value
+        return string.IsNullOrEmpty(input.Data.Name);
+    }
 }

@@ -36,7 +36,38 @@ public class PipelineBuilder<TInput, TCurrent>
             }
 
             var currentContext = _currentPipeline(context);
+            
+            // Validate the input context before processing
+            if (!step.Validate(currentContext))
+            {
+                // Handle validation failure (optional: customize the failure response)
+                return new PipelineContext<TNext>
+                {
+                    Data = default,
+                    Metadata = new Dictionary<string, object>(currentContext.Metadata),
+                    IsSuccessful = false,
+                    Errors = new List<string> { "Validation failed for the input." },
+                    CreatedAt = currentContext.CreatedAt,
+                    CorrelationId = currentContext.CorrelationId,
+                    StepAudits = new List<PipelineStepAudit>(currentContext.StepAudits)
+                };
+            }
+            
             var outputContext = step.Process(currentContext);
+            // Check if the output context is successful
+            if (!outputContext.IsSuccessful)
+            {
+                return new PipelineContext<TNext>
+                {
+                    Data = default,
+                    Metadata = new Dictionary<string, object>(outputContext.Metadata),
+                    IsSuccessful = false,
+                    Errors = new List<string>(outputContext.Errors),
+                    CreatedAt = outputContext.CreatedAt,
+                    CorrelationId = outputContext.CorrelationId,
+                    StepAudits = new List<PipelineStepAudit>(outputContext.StepAudits)
+                };
+            }
             // Persist the context after processing the step
             _repository.SaveContextAsync(outputContext).Wait();
             return outputContext;

@@ -25,4 +25,9 @@ public class StepWithOutput<TInput, TOutput> : IPipelineStep<TInput, TOutput>
 
         return outputContext;
     }
+
+    public bool Validate(PipelineContext<TInput> input)
+    {
+        return _innerStep.Validate(input);
+    }
 }

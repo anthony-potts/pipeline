@@ -46,4 +46,10 @@ public class SerializeStep : IPipelineStep<Person, string>
 
         return outputContext;
     }
+
+    public bool Validate(PipelineContext<Person> input)
+    {
+        // Ensure the input has a valid value
+        return string.IsNullOrEmpty(input.Data.Name);
+    }
 }

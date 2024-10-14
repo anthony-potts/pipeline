@@ -54,4 +54,10 @@ public class ParseStep : IPipelineStep<string, Person>
 
         return outputContext;
     }
+
+    public bool Validate(PipelineContext<string> input)
+    {
+        // Ensure the input has a valid value
+        return !string.IsNullOrWhiteSpace(input.Data);
+    }
 }
