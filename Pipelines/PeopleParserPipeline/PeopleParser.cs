@@ -1,10 +1,19 @@
-﻿using Pipeline.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using Pipeline.Interfaces;
+using Pipeline.Pipelines.Models;
 using Pipeline.Pipelines.Steps;
 
 namespace Pipeline.Pipelines;
 
-public class PeopleParser: IPipelineRunner
+public class PeopleParser : IPipelineRunner
 {
+    private readonly PipelineAuditor _pipelineAuditor;
+
+    public PeopleParser(PipelineAuditor pipelineAuditor)
+    {
+        _pipelineAuditor = pipelineAuditor;
+    }
+    
     public void Run(string[] args)
     {
         // Define the storage path for PipelineContexts
@@ -14,13 +23,8 @@ public class PeopleParser: IPipelineRunner
         IPipelineContextRepository repository = new JsonFilePipelineContextRepository(storagePath);
 
         // Initialize the pipeline builder with input type string
-        var pipelineBuilder = PipelineBase<string, string>.Create(repository)
-            .AddStep(new ParseStep()) // string -> Person
-            .AddStep(new ValidateStep()) // Person -> Person
-            .AddStep(new SerializeStep()); // Person -> string
+        var pipelineBuilder = new PipelineBuilder<PersonPipelineContext>(repository);
 
-        // Build the pipeline function
-        var pipelineFunc = pipelineBuilder.Build();
 
         // Create a list of input data
         var inputData = new List<string>
@@ -33,48 +37,42 @@ public class PeopleParser: IPipelineRunner
             "Charlie Brown, 40"
         };
 
-        // Prepare a list to hold PipelineContext<string> for each input
-        var contexts = new List<PipelineContext<string>>();
+
+        pipelineBuilder.AddStep(new ParseStep(inputData)) // string -> Person
+            .AddStep(new ValidateStep()) // Person -> Person
+            .AddStep(new SerializeStep()); // Person -> string
+
+        var pipelineRun = pipelineBuilder.Build<PersonPipelineContext>();
 
         // Prepare a list to hold successful outputs
-        var successfulOutputs = new List<string>();
-
-        // Initialize BatchPipeline
-        var batchPipeline = new BatchPipeline<string, string>(pipelineFunc);
-
-        // Create PipelineContext for each input
-        foreach (var input in inputData)
-        {
-            var context = new PipelineContext<string>
-            {
-                Data = input
-            };
-            contexts.Add(context);
-        }
-
+        var successfulOutputs = new List<Person>();
+        
+        
         // Execute the batch pipeline
-        var results = batchPipeline.Execute(contexts);
+        var resultContext = pipelineRun(new PersonPipelineContext());
+
 
         // Process results
-        foreach (var resultContext in results)
-        {
-            if (resultContext.IsSuccessful)
-            {
-                successfulOutputs.Add(resultContext.Data);
-                Console.WriteLine($"Success: {resultContext.Data}");
-            }
-            else
-            {
-                // Assuming CorrelationId corresponds to the input
-                Console.WriteLine($"Failed to process Input with CorrelationId: {resultContext.CorrelationId}");
-                foreach (var error in resultContext.Errors)
-                {
-                    Console.WriteLine($"  - {error}");
-                }
-            }
 
-            Console.WriteLine(); // For readability
+        if (resultContext.IsSuccessful)
+        {
+            foreach (var person in resultContext.People)
+            {
+                successfulOutputs.Add(person);
+            }
         }
+        else
+        {
+            // Assuming CorrelationId corresponds to the input
+            Console.WriteLine($"Failed to process Input with CorrelationId: {resultContext.CorrelationId}");
+            foreach (var error in resultContext.Errors)
+            {
+                Console.WriteLine($"  - {error}");
+            }
+        }
+
+        Console.WriteLine(); // For readability
+
 
         // Display all successful outputs
         Console.WriteLine("All Successful Outputs:");
@@ -82,7 +80,13 @@ public class PeopleParser: IPipelineRunner
         {
             Console.WriteLine(output);
         }
+        
+        //
+        Console.WriteLine("output JSON");
+        
+        Console.WriteLine(resultContext.OutputList);
 
-        // Optionally, review the persisted PipelineContext JSON files in the 'PipelineContexts' directory
+        _pipelineAuditor.OutputAudit(resultContext);
+        
     }
 }

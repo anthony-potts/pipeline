@@ -2,5 +2,5 @@
 
 public interface IPipelineContextRepository
 {
-    Task SaveContextAsync<T>(PipelineContext<T> context);
+    Task SaveContextAsync(PipelineContext context);
 }

@@ -17,7 +17,7 @@ public class JsonFilePipelineContextRepository : IPipelineContextRepository
         }
     }
 
-    public async Task SaveContextAsync<T>(PipelineContext<T> context)
+    public async Task SaveContextAsync(PipelineContext context)
     {
         string fileName = Path.Combine(_storagePath, $"{context.CorrelationId}.json");
         var options = new JsonSerializerOptions

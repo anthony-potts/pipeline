@@ -3,9 +3,9 @@ using Newtonsoft.Json;
 using Pipeline.Interfaces;
 
 namespace Pipeline.Pipelines.Steps;
-public class SerializeStep : IPipelineStep<Person, string>
+public class SerializeStep : IPipelineStep<PersonPipelineContext>
 {
-    public PipelineContext<string> Process(PipelineContext<Person> context)
+    public PersonPipelineContext Process(PersonPipelineContext context)
     {
         var audit = new PipelineStepAudit
         {
@@ -13,7 +13,7 @@ public class SerializeStep : IPipelineStep<Person, string>
             StartedAt = DateTime.UtcNow
         };
 
-        PipelineContext<string> outputContext = new PipelineContext<string>
+        PersonPipelineContext outputContext = new PersonPipelineContext
         {
             Metadata = new Dictionary<string, object>(context.Metadata),
             IsSuccessful = context.IsSuccessful,
@@ -22,11 +22,13 @@ public class SerializeStep : IPipelineStep<Person, string>
             CorrelationId = context.CorrelationId,
             StepAudits = new List<PipelineStepAudit>(context.StepAudits)
         };
+        
+        
 
         try
         {
-            string json = JsonConvert.SerializeObject(context.Data);
-            outputContext.Data = json;
+            string json = JsonConvert.SerializeObject(context.People);
+            outputContext.OutputList = json;
 
             audit.WasSuccessful = true;
         }

@@ -6,9 +6,9 @@ namespace Pipeline.Pipelines.Steps;
 using System.Collections.Generic;
 using System.Linq;
 
-public class ValidateStep : IPipelineStep<Person, Person>
+public class ValidateStep : IPipelineStep<PersonPipelineContext>
 {
-    public PipelineContext<Person> Process(PipelineContext<Person> context)
+    public PersonPipelineContext Process(PersonPipelineContext context)
     {
         var audit = new PipelineStepAudit
         {
@@ -16,32 +16,39 @@ public class ValidateStep : IPipelineStep<Person, Person>
             StartedAt = System.DateTime.UtcNow
         };
 
+        var inputPeople = context.People;
+        var outputPeople = new List<Person>();
+
         var errors = new List<string>();
 
-        if (string.IsNullOrEmpty(context.Data.Name))
-            errors.Add("Name cannot be empty.");
-        if (context.Data.Age < 0 || context.Data.Age > 120)
-            errors.Add("Age must be between 0 and 120.");
-
-        if (errors.Any())
+        foreach (var person in inputPeople)
         {
-            context.IsSuccessful = false;
-            context.Errors.AddRange(errors);
+            var personErrors = new List<string>();
+            if (string.IsNullOrEmpty(person.Name))
+                personErrors.Add("Name cannot be empty.");
+            if (person.Age < 0 || person.Age > 120)
+                personErrors.Add("Age must be between 0 and 120.");
 
-            audit.WasSuccessful = false;
-            audit.Errors.AddRange(errors);
+            if (personErrors.Any())
+            {
+                audit.WasSuccessful = false;
+                audit.Errors.AddRange(personErrors);
+            }
+            else
+            {
+                audit.WasSuccessful = true;
+                outputPeople.Add(person);
+            }
         }
-        else
-        {
-            audit.WasSuccessful = true;
-        }
-
+        
         audit.EndedAt = System.DateTime.UtcNow;
         context.StepAudits.Add(audit);
+        
+        
 
-        return new PipelineContext<Person>
+        return new PersonPipelineContext()
         {
-            Data = context.Data,
+            People = outputPeople,
             Metadata = context.Metadata,
             IsSuccessful = context.IsSuccessful,
             Errors = context.Errors,

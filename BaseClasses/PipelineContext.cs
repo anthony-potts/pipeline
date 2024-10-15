@@ -1,8 +1,7 @@
 ﻿namespace Pipeline;
 
-public class PipelineContext<T>
+public class PipelineContext
 {
-    public T Data { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new ();
     public bool IsSuccessful { get; set; } = true;
     public List<string> Errors { get; set; } = new ();

@@ -3,9 +3,16 @@ using Pipeline.Pipelines.Models;
 
 namespace Pipeline.Pipelines.Steps;
 
-public class ParseStep : IPipelineStep<string, Person>
+public class ParseStep : IPipelineStep<PersonPipelineContext>
 {
-    public PipelineContext<Person> Process(PipelineContext<string> context)
+    private readonly List<string> _inputData;
+    public ParseStep(List<string> inputData)
+    {
+        _inputData = inputData;
+    }
+
+
+    public PersonPipelineContext Process(PersonPipelineContext context)
     {
         var audit = new PipelineStepAudit
         {
@@ -13,7 +20,7 @@ public class ParseStep : IPipelineStep<string, Person>
             StartedAt = DateTime.UtcNow
         };
 
-        PipelineContext<Person> outputContext = new PipelineContext<Person>
+        PersonPipelineContext outputContext = new PersonPipelineContext()
         {
             Metadata = new Dictionary<string, object>(context.Metadata),
             IsSuccessful = context.IsSuccessful,
@@ -25,17 +32,25 @@ public class ParseStep : IPipelineStep<string, Person>
 
         try
         {
-            var parts = context.Data.Split(',');
-            if (parts.Length != 2)
-                throw new FormatException("Input data must be in the format 'Name, Age'.");
-
-            var person = new Person
+            foreach (var input in _inputData)
             {
-                Name = parts[0].Trim(),
-                Age = int.Parse(parts[1].Trim())
-            };
-
-            outputContext.Data = person;
+                var parts = input.Split(',');
+                if (parts.Length != 2)
+                {
+                    audit.Errors.Add($"Input data must be in the format 'Name, Age'. Error Line: {input}");
+                }
+                else
+                {
+                    var person = new Person
+                    {
+                        Name = parts[0].Trim(),
+                        Age = int.Parse(parts[1].Trim())
+                    };
+                           
+                    outputContext.People.Add(person);
+                   
+                }
+            }
             audit.WasSuccessful = true;
         }
         catch (Exception ex)
